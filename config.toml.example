@@ -1,0 +1,3 @@
+mumbleurl = "mumble://username:passwors@hostname:port"
+tgtoken = "tgbottokengoeshere"
+tgchatid = -1234567 # Telegram chat id to spam with notifications 
