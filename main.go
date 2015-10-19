@@ -89,7 +89,19 @@ func main() {
 					users = append(users, user.Name)
 				}
 			}
-			bot.SendMessage(tgbotapi.NewMessage(update.Message.Chat.ID, prettyListify(users)+" are online"))
+			if len(users) == 0 {
+				users = []string{"Noone"}
+			}
+
+			var isare string
+			if len(users) < 2 {
+				isare = "is"
+			} else {
+				isare = "are"
+			}
+
+			bot.SendMessage(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("%s %s online", prettyListify(users), isare)))
+
 		case "/chatid":
 			bot.SendMessage(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("This chat's ID: %d", update.Message.Chat.ID)))
 		}
