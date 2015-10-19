@@ -19,6 +19,16 @@ type config struct {
 	Debug     bool   `default:"false"`
 }
 
+// prettyListify takes a slice of strings and returns a string of the form "x, y and z"
+func prettyListify(things []string) string {
+	if len(things) <= 2 {
+		return strings.Join(things, " and ")
+	} else {
+		thing, things := things[0], things[1:]
+		return thing + ", " + prettyListify(things)
+	}
+}
+
 func main() {
 	conf := new(config)
 	m := multiconfig.NewWithPath("config.toml")
@@ -71,5 +81,17 @@ func main() {
 	}
 	for update := range bot.Updates {
 		log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
+		switch update.Message.Text {
+		case "/users":
+			var users []string
+			for userid, user := range client.Users {
+				if userid != client.Self.UserID { // Skip adding ourself to the online users
+					users = append(users, user.Name)
+				}
+			}
+			bot.SendMessage(tgbotapi.NewMessage(update.Message.Chat.ID, prettyListify(users)+" are online"))
+		case "/chatid":
+			bot.SendMessage(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("This chat's ID: %d", update.Message.Chat.ID)))
+		}
 	}
 }
