@@ -84,8 +84,8 @@ func main() {
 		switch update.Message.Text {
 		case "/users":
 			var users []string
-			for userid, user := range client.Users {
-				if userid != client.Self.UserID { // Skip adding ourself to the online users
+			for _, user := range client.Users {
+				if user.Session != client.Self.Session { // Skip adding ourself to the online users
 					users = append(users, user.Name)
 				}
 			}
