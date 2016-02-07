@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/Syfaro/telegram-bot-api"
+	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/koding/multiconfig"
 	"github.com/layeh/gumble/gumble"
 	"github.com/layeh/gumble/gumbleutil"
@@ -43,7 +43,8 @@ func main() {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
-	if err = bot.UpdatesChan(u); err != nil {
+	updates, err := bot.GetUpdatesChan(u)
+	if err != nil {
 		log.Panic(err)
 	}
 
@@ -72,14 +73,14 @@ func main() {
 			if e.Type.Has(gumble.UserChangeConnected) {
 				fmt.Println("User connected!")
 				msgconf := tgbotapi.NewMessage(conf.TgChatID, fmt.Sprintf("%s connected #cgsnotify", e.User.Name))
-				bot.SendMessage(msgconf)
+				bot.Send(msgconf)
 			}
 		},
 	})
 	if err := client.Connect(); err != nil {
 		panic(err)
 	}
-	for update := range bot.Updates {
+	for update := range updates {
 		log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
 		switch update.Message.Text {
 		case "/users":
@@ -100,10 +101,10 @@ func main() {
 				isare = "are"
 			}
 
-			bot.SendMessage(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("%s %s online", prettyListify(users), isare)))
+			bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("%s %s online", prettyListify(users), isare)))
 
 		case "/chatid":
-			bot.SendMessage(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("This chat's ID: %d", update.Message.Chat.ID)))
+			bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("This chat's ID: %d", update.Message.Chat.ID)))
 		}
 	}
 }
