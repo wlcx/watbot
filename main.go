@@ -4,20 +4,15 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"os"
+	"strconv"
 	"strings"
 
 	"github.com/go-telegram-bot-api/telegram-bot-api"
-	"github.com/koding/multiconfig"
+	"github.com/joho/godotenv"
 	"github.com/layeh/gumble/gumble"
 	"github.com/layeh/gumble/gumbleutil"
 )
-
-type config struct {
-	MumbleURL string `required:"true"`
-	TgToken   string `required:"true"`
-	TgChatID  int    `required:"true"`
-	Debug     bool   `default:"false"`
-}
 
 // prettyListify takes a slice of strings and returns a string of the form "x, y and z"
 func prettyListify(things []string) string {
@@ -30,15 +25,12 @@ func prettyListify(things []string) string {
 }
 
 func main() {
-	conf := new(config)
-	m := multiconfig.NewWithPath("config.toml")
-	m.MustLoad(conf)
+	godotenv.Load()
 
-	bot, err := tgbotapi.NewBotAPI(conf.TgToken)
+	bot, err := tgbotapi.NewBotAPI(os.Getenv("TG_TOKEN"))
 	if err != nil {
 		log.Panic(err)
 	}
-	bot.Debug = conf.Debug
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
@@ -49,7 +41,7 @@ func main() {
 	}
 
 	// Mumble config
-	mumbleParsedURL, err := url.Parse(conf.MumbleURL)
+	mumbleParsedURL, err := url.Parse(os.Getenv("MUMBLE_URL"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -72,7 +64,11 @@ func main() {
 		UserChange: func(e *gumble.UserChangeEvent) {
 			if e.Type.Has(gumble.UserChangeConnected) {
 				fmt.Println("User connected!")
-				msgconf := tgbotapi.NewMessage(conf.TgChatID, fmt.Sprintf("%s connected #cgsnotify", e.User.Name))
+				chatid, err := strconv.Atoi(os.Getenv("TG_CHAT_ID"))
+				if err != nil {
+					log.Fatal(err)
+				}
+				msgconf := tgbotapi.NewMessage(chatid, fmt.Sprintf("%s connected #cgsnotify", e.User.Name))
 				bot.Send(msgconf)
 			}
 		},
