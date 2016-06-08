@@ -1,0 +1,33 @@
+{
+	"ImportPath": "github.com/wlcx/watbot",
+	"GoVersion": "go1.6",
+	"Deps": [
+		{
+			"ImportPath": "github.com/go-telegram-bot-api/telegram-bot-api",
+			"Comment": "v1.0.0-3-gf2b3683",
+			"Rev": "f2b36838e6134c4db9b3f4d78d9cd2fe40e25724"
+		},
+		{
+			"ImportPath": "github.com/golang/protobuf/proto",
+			"Rev": "3d2510a4dd961caffa2ae781669c628d82db700a"
+		},
+		{
+			"ImportPath": "github.com/joho/godotenv",
+			"Comment": "v1-10-g4ed1339",
+			"Rev": "4ed13390c0acd2ff4e371e64d8b97c8954138243"
+		},
+		{
+			"ImportPath": "github.com/layeh/gumble/gumble",
+			"Rev": "afc2ca80aca800e563154beafe4c43d14da5ab3d"
+		},
+		{
+			"ImportPath": "github.com/layeh/gumble/gumbleutil",
+			"Rev": "afc2ca80aca800e563154beafe4c43d14da5ab3d"
+		},
+		{
+			"ImportPath": "github.com/technoweenie/multipartstreamer",
+			"Comment": "v1.0.1",
+			"Rev": "a90a01d73ae432e2611d178c18367fbaa13e0154"
+		}
+	]
+}
