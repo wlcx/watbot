@@ -17,7 +17,10 @@ something with plugins and command handlers without having to design
 all that yourself.
 
 Use `github.com/go-telegram-bot-api/telegram-bot-api` for the latest
-version, or use `gopkg.in/telegram-bot-api.v1` for the stable build.
+version, or use `gopkg.in/telegram-bot-api.v4` for the stable build.
+
+Join [the development group](https://telegram.me/go_telegram_bot_api) if
+you want to ask questions or discuss development.
 
 ## Example
 
@@ -29,7 +32,7 @@ package main
 
 import (
 	"log"
-	"gopkg.in/telegram-bot-api.v1"
+	"gopkg.in/telegram-bot-api.v4"
 )
 
 func main() {
@@ -48,6 +51,10 @@ func main() {
 	updates, err := bot.GetUpdatesChan(u)
 
 	for update := range updates {
+		if update.Message == nil {
+			continue
+		}
+
 		log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
 
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
@@ -65,7 +72,7 @@ you may use a slightly different method.
 package main
 
 import (
-	"gopkg.in/telegram-bot-api.v1"
+	"gopkg.in/telegram-bot-api.v4"
 	"log"
 	"net/http"
 )
@@ -85,7 +92,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	updates, _ := bot.ListenForWebhook("/" + bot.Token)
+	updates := bot.ListenForWebhook("/" + bot.Token)
 	go http.ListenAndServeTLS("0.0.0.0:8443", "cert.pem", "key.pem", nil)
 
 	for update := range updates {

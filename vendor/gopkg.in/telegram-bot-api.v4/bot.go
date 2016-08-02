@@ -64,7 +64,7 @@ func (bot *BotAPI) MakeRequest(endpoint string, params url.Values) (APIResponse,
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusForbidden {
-		return APIResponse{}, errors.New(APIForbidden)
+		return APIResponse{}, errors.New(ErrAPIForbidden)
 	}
 
 	bytes, err := ioutil.ReadAll(resp.Body)
@@ -146,7 +146,7 @@ func (bot *BotAPI) UploadFile(endpoint string, params map[string]string, fieldna
 
 		ms.WriteReader(fieldname, f.Name, int64(len(data)), buf)
 	default:
-		return APIResponse{}, errors.New("bad file type")
+		return APIResponse{}, errors.New(ErrBadFileType)
 	}
 
 	method := fmt.Sprintf(APIEndpoint, bot.Token, endpoint)
@@ -364,7 +364,7 @@ func (bot *BotAPI) GetFile(config FileConfig) (File, error) {
 // instantly instead of having to wait between requests.
 func (bot *BotAPI) GetUpdates(config UpdateConfig) ([]Update, error) {
 	v := url.Values{}
-	if config.Offset > 0 {
+	if config.Offset != 0 {
 		v.Add("offset", strconv.Itoa(config.Offset))
 	}
 	if config.Limit > 0 {
@@ -396,7 +396,7 @@ func (bot *BotAPI) RemoveWebhook() (APIResponse, error) {
 //
 // If this is set, GetUpdates will not get any data!
 //
-// If you do not have a legitmate TLS certificate, you need to include
+// If you do not have a legitimate TLS certificate, you need to include
 // your self signed certificate with the config.
 func (bot *BotAPI) SetWebhook(config WebhookConfig) (APIResponse, error) {
 	if config.Certificate == nil {
@@ -452,10 +452,10 @@ func (bot *BotAPI) GetUpdatesChan(config UpdateConfig) (<-chan Update, error) {
 }
 
 // ListenForWebhook registers a http handler for a webhook.
-func (bot *BotAPI) ListenForWebhook(pattern string) (<-chan Update, http.Handler) {
+func (bot *BotAPI) ListenForWebhook(pattern string) <-chan Update {
 	updatesChan := make(chan Update, 100)
 
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
 		bytes, _ := ioutil.ReadAll(r.Body)
 
 		var update Update
@@ -464,9 +464,7 @@ func (bot *BotAPI) ListenForWebhook(pattern string) (<-chan Update, http.Handler
 		updatesChan <- update
 	})
 
-	http.HandleFunc(pattern, handler)
-
-	return updatesChan, handler
+	return updatesChan
 }
 
 // AnswerInlineQuery sends a response to an inline query.
@@ -484,6 +482,169 @@ func (bot *BotAPI) AnswerInlineQuery(config InlineConfig) (APIResponse, error) {
 		return APIResponse{}, err
 	}
 	v.Add("results", string(data))
+	v.Add("switch_pm_text", config.SwitchPMText)
+	v.Add("switch_pm_parameter", config.SwitchPMParameter)
+
+	bot.debugLog("answerInlineQuery", v, nil)
 
 	return bot.MakeRequest("answerInlineQuery", v)
+}
+
+// AnswerCallbackQuery sends a response to an inline query callback.
+func (bot *BotAPI) AnswerCallbackQuery(config CallbackConfig) (APIResponse, error) {
+	v := url.Values{}
+
+	v.Add("callback_query_id", config.CallbackQueryID)
+	v.Add("text", config.Text)
+	v.Add("show_alert", strconv.FormatBool(config.ShowAlert))
+
+	bot.debugLog("answerCallbackQuery", v, nil)
+
+	return bot.MakeRequest("answerCallbackQuery", v)
+}
+
+// KickChatMember kicks a user from a chat. Note that this only will work
+// in supergroups, and requires the bot to be an admin. Also note they
+// will be unable to rejoin until they are unbanned.
+func (bot *BotAPI) KickChatMember(config ChatMemberConfig) (APIResponse, error) {
+	v := url.Values{}
+
+	if config.SuperGroupUsername == "" {
+		v.Add("chat_id", strconv.FormatInt(config.ChatID, 10))
+	} else {
+		v.Add("chat_id", config.SuperGroupUsername)
+	}
+	v.Add("user_id", strconv.Itoa(config.UserID))
+
+	bot.debugLog("kickChatMember", v, nil)
+
+	return bot.MakeRequest("kickChatMember", v)
+}
+
+// LeaveChat makes the bot leave the chat.
+func (bot *BotAPI) LeaveChat(config ChatConfig) (APIResponse, error) {
+	v := url.Values{}
+
+	if config.SuperGroupUsername == "" {
+		v.Add("chat_id", strconv.FormatInt(config.ChatID, 10))
+	} else {
+		v.Add("chat_id", config.SuperGroupUsername)
+	}
+
+	bot.debugLog("leaveChat", v, nil)
+
+	return bot.MakeRequest("leaveChat", v)
+}
+
+// GetChat gets information about a chat.
+func (bot *BotAPI) GetChat(config ChatConfig) (Chat, error) {
+	v := url.Values{}
+
+	if config.SuperGroupUsername == "" {
+		v.Add("chat_id", strconv.FormatInt(config.ChatID, 10))
+	} else {
+		v.Add("chat_id", config.SuperGroupUsername)
+	}
+
+	resp, err := bot.MakeRequest("getChat", v)
+	if err != nil {
+		return Chat{}, err
+	}
+
+	var chat Chat
+	err = json.Unmarshal(resp.Result, &chat)
+
+	bot.debugLog("getChat", v, chat)
+
+	return chat, err
+}
+
+// GetChatAdministrators gets a list of administrators in the chat.
+//
+// If none have been appointed, only the creator will be returned.
+// Bots are not shown, even if they are an administrator.
+func (bot *BotAPI) GetChatAdministrators(config ChatConfig) ([]ChatMember, error) {
+	v := url.Values{}
+
+	if config.SuperGroupUsername == "" {
+		v.Add("chat_id", strconv.FormatInt(config.ChatID, 10))
+	} else {
+		v.Add("chat_id", config.SuperGroupUsername)
+	}
+
+	resp, err := bot.MakeRequest("getChatAdministrators", v)
+	if err != nil {
+		return []ChatMember{}, err
+	}
+
+	var members []ChatMember
+	err = json.Unmarshal(resp.Result, &members)
+
+	bot.debugLog("getChatAdministrators", v, members)
+
+	return members, err
+}
+
+// GetChatMembersCount gets the number of users in a chat.
+func (bot *BotAPI) GetChatMembersCount(config ChatConfig) (int, error) {
+	v := url.Values{}
+
+	if config.SuperGroupUsername == "" {
+		v.Add("chat_id", strconv.FormatInt(config.ChatID, 10))
+	} else {
+		v.Add("chat_id", config.SuperGroupUsername)
+	}
+
+	resp, err := bot.MakeRequest("getChatMembersCount", v)
+	if err != nil {
+		return -1, err
+	}
+
+	var count int
+	err = json.Unmarshal(resp.Result, &count)
+
+	bot.debugLog("getChatMembersCount", v, count)
+
+	return count, err
+}
+
+// GetChatMember gets a specific chat member.
+func (bot *BotAPI) GetChatMember(config ChatConfigWithUser) (ChatMember, error) {
+	v := url.Values{}
+
+	if config.SuperGroupUsername == "" {
+		v.Add("chat_id", strconv.FormatInt(config.ChatID, 10))
+	} else {
+		v.Add("chat_id", config.SuperGroupUsername)
+	}
+	v.Add("user_id", strconv.Itoa(config.UserID))
+
+	resp, err := bot.MakeRequest("getChatMember", v)
+	if err != nil {
+		return ChatMember{}, err
+	}
+
+	var member ChatMember
+	err = json.Unmarshal(resp.Result, &member)
+
+	bot.debugLog("getChatMember", v, member)
+
+	return member, err
+}
+
+// UnbanChatMember unbans a user from a chat. Note that this only will work
+// in supergroups, and requires the bot to be an admin.
+func (bot *BotAPI) UnbanChatMember(config ChatMemberConfig) (APIResponse, error) {
+	v := url.Values{}
+
+	if config.SuperGroupUsername == "" {
+		v.Add("chat_id", strconv.FormatInt(config.ChatID, 10))
+	} else {
+		v.Add("chat_id", config.SuperGroupUsername)
+	}
+	v.Add("user_id", strconv.Itoa(config.UserID))
+
+	bot.debugLog("unbanChatMember", v, nil)
+
+	return bot.MakeRequest("unbanChatMember", v)
 }

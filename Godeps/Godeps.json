@@ -1,7 +1,33 @@
 {
 	"ImportPath": "github.com/wlcx/watbot",
-	"GoVersion": "go1.6.3",
+	"GoVersion": "go1.6",
+	"GodepVersion": "v74",
 	"Deps": [
+		{
+			"ImportPath": "github.com/golang/protobuf/proto",
+			"Rev": "8081512d5bf6d07341a19043dac2396eec31bbe6"
+		},
+		{
+			"ImportPath": "github.com/joho/godotenv",
+			"Comment": "v1-10-g4ed1339",
+			"Rev": "4ed13390c0acd2ff4e371e64d8b97c8954138243"
+		},
+		{
+			"ImportPath": "github.com/layeh/gumble/gumble",
+			"Rev": "afc2ca80aca800e563154beafe4c43d14da5ab3d"
+		},
+		{
+			"ImportPath": "github.com/layeh/gumble/gumble/MumbleProto",
+			"Rev": "afc2ca80aca800e563154beafe4c43d14da5ab3d"
+		},
+		{
+			"ImportPath": "github.com/layeh/gumble/gumble/varint",
+			"Rev": "afc2ca80aca800e563154beafe4c43d14da5ab3d"
+		},
+		{
+			"ImportPath": "github.com/layeh/gumble/gumbleutil",
+			"Rev": "afc2ca80aca800e563154beafe4c43d14da5ab3d"
+		},
 		{
 			"ImportPath": "github.com/technoweenie/multipartstreamer",
 			"Comment": "v1.0.1",
