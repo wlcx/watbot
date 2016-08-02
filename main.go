@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/layeh/gumble/gumble"
@@ -76,7 +77,9 @@ func main() {
 		Disconnect: func(e *gumble.DisconnectEvent) {
 			switch {
 			case e.Type.Has(gumble.DisconnectError):
-				sendToChat(bot, "Disconnected from mumble due to error")
+				sendToChat(bot, "Disconnected from mumble due to error, reconnecting in 5s")
+				time.Sleep(5 * time.Second)
+				e.Client.Connect()
 			case e.Type.Has(gumble.DisconnectKicked):
 				sendToChat(bot, "I just got kicked from mumble - rejoining out of spite")
 				e.Client.Connect()
