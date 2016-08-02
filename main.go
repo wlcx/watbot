@@ -8,22 +8,28 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/joho/godotenv"
 	"github.com/layeh/gumble/gumble"
 	"github.com/layeh/gumble/gumbleutil"
+	tgbotapi "gopkg.in/telegram-bot-api.v4"
 )
 
 // prettyListify takes a slice of strings and returns a string of the form "x, y and z"
 func prettyListify(things []string) string {
 	if len(things) <= 2 {
 		return strings.Join(things, " and ")
-	} else {
-		thing, things := things[0], things[1:]
-		return thing + ", " + prettyListify(things)
 	}
+	thing, things := things[0], things[1:]
+	return thing + ", " + prettyListify(things)
 }
-
+func sendToChat(bot *tgbotapi.BotAPI, message string) {
+	chatid, err := strconv.Atoi(os.Getenv("TG_CHAT_ID"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	msgconf := tgbotapi.NewMessage(int64(chatid), message)
+	bot.Send(msgconf)
+}
 func main() {
 	godotenv.Load()
 
@@ -45,7 +51,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if url.User == nil {
+	if mumbleParsedURL.User.Username() == "" {
 		log.Fatal("Mumble URL must include a username")
 	}
 	mumbleConf := gumble.NewConfig()
@@ -64,12 +70,18 @@ func main() {
 		UserChange: func(e *gumble.UserChangeEvent) {
 			if e.Type.Has(gumble.UserChangeConnected) {
 				fmt.Println("User connected!")
-				chatid, err := strconv.Atoi(os.Getenv("TG_CHAT_ID"))
-				if err != nil {
-					log.Fatal(err)
-				}
-				msgconf := tgbotapi.NewMessage(chatid, fmt.Sprintf("%s connected #cgsnotify", e.User.Name))
-				bot.Send(msgconf)
+				sendToChat(bot, fmt.Sprintf("%s connected #cgsnotify", e.User.Name))
+			}
+		},
+		Disconnect: func(e *gumble.DisconnectEvent) {
+			switch {
+			case e.Type.Has(gumble.DisconnectError):
+				sendToChat(bot, "Disconnected from mumble due to error")
+			case e.Type.Has(gumble.DisconnectKicked):
+				sendToChat(bot, "I just got kicked from mumble - rejoining out of spite")
+				e.Client.Connect()
+			case e.Type.Has(gumble.DisconnectBanned):
+				sendToChat(bot, "I just got banned from mumble! Rude!")
 			}
 		},
 	})
